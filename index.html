@@ -1,0 +1,111 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hardwares na Lua e em Marte</title>
+<style>
+:root{--a:#9fd0ff;--bg:#05060c}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:#e8ecf6;font:15px/1.55 system-ui,Segoe UI,sans-serif;overflow-x:hidden}
+body.mars{--a:#ff7a45}
+#bg{position:fixed;inset:-5%;z-index:0;background:radial-gradient(ellipse at 50% 30%,#16203a,#05060c 70%);transition:background 1s}
+body.mars #bg{background:radial-gradient(ellipse at 50% 30%,#3a1608,#0a0403 70%)}
+#stars{position:fixed;inset:-5%;z-index:0;background-image:radial-gradient(1px 1px at 20% 30%,#fff8,transparent),radial-gradient(1.5px 1.5px at 70% 60%,#fff6,transparent),radial-gradient(1px 1px at 40% 80%,#fff7,transparent),radial-gradient(1px 1px at 85% 15%,#fff9,transparent);background-size:300px 300px}
+canvas{position:fixed;inset:0;z-index:1;pointer-events:none}
+#vig{position:fixed;inset:0;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,#000d 100%)}
+#ca{position:fixed;inset:0;z-index:5;pointer-events:none;box-shadow:inset 6px 0 40px #f004,inset -6px 0 40px #00f4;mix-blend-mode:screen}
+#scan{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:0;background:repeating-linear-gradient(0deg,#0000 0 2px,#0008 2px 3px)}
+#flash{position:fixed;inset:0;z-index:7;pointer-events:none;background:#fff;opacity:0}
+body.glitch #scan{opacity:1;animation:gl .35s steps(6)}
+@keyframes gl{0%{transform:translateX(-8px);filter:hue-rotate(90deg)}50%{transform:translateX(9px)}100%{transform:none}}
+body.shake #app{animation:sh .45s}
+@keyframes sh{10%{transform:translate(-8px,5px)}30%{transform:translate(9px,-6px)}50%{transform:translate(-6px,-4px)}70%{transform:translate(5px,6px)}}
+body.flash #flash{animation:fl .5s}
+@keyframes fl{0%{opacity:.9}100%{opacity:0}}
+#app{position:relative;z-index:2;max-width:1200px;margin:auto;padding:20px 18px 60px}
+header{text-align:center;padding:26px 0 8px}
+h1{font-size:clamp(26px,5vw,48px);letter-spacing:-1px;text-shadow:0 0 30px var(--a)}
+header p{opacity:.7;max-width:640px;margin:8px auto}
+.tabs{display:flex;gap:10px;justify-content:center;margin:18px 0}
+.tab{background:#ffffff10;border:1px solid #ffffff25;color:#fff;padding:10px 22px;border-radius:99px;cursor:pointer;font-size:15px;transition:.3s}
+.tab.on{background:var(--a);color:#000;box-shadow:0 0 25px var(--a)}
+.roster{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:10px 0 26px}
+.ch{width:104px;padding:12px 6px;text-align:center;background:#ffffff0a;border:1px solid #ffffff1f;border-radius:14px;cursor:pointer;transition:transform .3s,box-shadow .3s,border-color .3s;font-size:11px}
+.ch i{display:block;font-style:normal;font-size:34px;filter:grayscale(1) brightness(.6);transition:.3s}
+.ch:hover{transform:translateY(-6px) scale(1.08);border-color:var(--a);box-shadow:0 0 22px var(--a),inset 0 0 12px #fff2}
+.ch:hover i,.ch.on i{filter:none;text-shadow:0 0 18px var(--a)}
+.ch.on{border-color:var(--a);box-shadow:0 0 30px var(--a)}
+.stage{position:relative;height:340px;display:flex;align-items:center;justify-content:center;perspective:800px}
+.cone{position:absolute;top:-30px;left:50%;width:380px;height:380px;margin-left:-190px;background:linear-gradient(#ffffff40,transparent);clip-path:polygon(40% 0,60% 0,100% 100%,0 100%);filter:blur(8px);opacity:0;transition:opacity 1s}
+.stage.lit .cone{opacity:1}
+.ring{position:absolute;width:20px;height:20px;border:3px solid var(--a);border-radius:50%;opacity:0;pointer-events:none}
+.ring.go{animation:rp .9s ease-out}
+@keyframes rp{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(28)}}
+.hero{font-size:150px;line-height:1;transition:filter 1.2s,transform .5s;filter:brightness(0) drop-shadow(0 0 2px var(--a))}
+.stage.lit .hero{filter:brightness(1) drop-shadow(0 0 4px #fff) drop-shadow(0 0 28px var(--a))}
+.hero.out{animation:dis .5s forwards}
+.hero.in{animation:zin .6s}
+@keyframes dis{to{opacity:0;filter:blur(18px) brightness(2);transform:scale(1.3) translateY(-20px)}}
+@keyframes zin{from{transform:scale(.3) rotate(-8deg);opacity:0}}
+.badge{position:absolute;bottom:0;text-align:center;font-size:13px;opacity:.75}
+.btn{display:block;margin:6px auto 22px;background:var(--a);color:#000;border:0;font-weight:700;padding:13px 34px;border-radius:12px;font-size:16px;cursor:pointer;box-shadow:0 0 30px var(--a);transition:.2s}
+.btn:active{transform:scale(.94)}
+.panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{background:#ffffff0b;backdrop-filter:blur(8px);border:1px solid #ffffff1a;border-radius:16px;padding:18px;opacity:0;transform:translateY(24px);transition:opacity .6s,transform .6s}
+.show .card{opacity:1;transform:none}
+.show .card:nth-child(2){transition-delay:.1s}.show .card:nth-child(3){transition-delay:.2s}.show .card:nth-child(4){transition-delay:.3s}.show .card:nth-child(5){transition-delay:.4s}
+.card h3{color:var(--a);font-size:13px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.wide{grid-column:1/-1}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.stat{background:#ffffff0d;border:1px solid var(--a);border-radius:12px;padding:8px 14px}
+.stat b{display:block;font-size:20px;color:var(--a)}
+.stat span{font-size:11px;opacity:.75}
+.yes{display:inline-block;background:#1fbf6a;color:#001;font-weight:700;padding:2px 10px;border-radius:99px;margin-bottom:6px}
+body.dof #bg,body.dof #stars{filter:blur(7px) brightness(.7)}
+#bg,#stars{transition:filter .8s,transform .3s,background 1s}
+body.freeze *{animation-play-state:paused!important;transition:none!important}
+.stage.whip{animation:wp .5s}
+@keyframes wp{0%{transform:translateX(-120px) scale(1.15);filter:blur(10px)}100%{transform:none;filter:none}}
+</style></head><body>
+<div id="bg"></div><div id="stars"></div><canvas id="cv"></canvas>
+<div id="vig"></div><div id="ca"></div><div id="scan"></div><div id="flash"></div>
+<div id="app">
+<header><h1>🌕 Lua &amp; Marte 🔴</h1><p>10 hardwares que ficaram para trás. Escolha um «personagem», passe o mouse, e clique em Confirmar para acender o holofote e revelar função, utilidade e resultado.</p></header>
+<div class="tabs"><button class="tab on" data-w="lua">🌕 Na Lua</button><button class="tab" data-w="marte">🔴 Em Marte</button></div>
+<div class="roster" id="roster"></div>
+<div class="stage" id="stage"><div class="cone"></div><div class="hero" id="hero"></div><div class="badge" id="badge"></div></div>
+<button class="btn" id="ok">CONFIRMAR ▶</button>
+<div class="panel" id="panel"></div>
+</div>
+<script>
+const D={lua:[
+{i:"🚀",n:"Estágio de descida do Módulo Lunar Eagle",m:"Apollo 11 (1969)",u:"Base e plataforma de pouso do módulo Eagle: freou a descida com motor de empuxo variável e depois serviu de plataforma de lançamento para o retorno.",s:[["15.102,1 kg","massa de lançamento (módulo completo)"],["44.316 N","empuxo máximo (≈9.870 lbf)"],["4.710 N","empuxo mínimo (1.050 lbf)"],["98 kg","combustível utilizável restante"]],h:"Metade inferior do Módulo Lunar Eagle (LM-5), fabricada pela Grumman: estrutura octogonal com trem de pouso de quatro pernas e escada de acesso.",mi:"Levar Armstrong e Aldrin da órbita lunar até a superfície e servir de base durante a estadia.",p:"Após a decolagem do estágio de ascensão, virou plataforma de lançamento. Não foi projetado para retornar.",o:"O Eagle pousou em 20 de julho de 1969, às 20:17:40 UTC, com margem de segurança maior que a prevista. O estágio permanece no Mare Tranquillitatis até hoje."},
+{i:"🚙",n:"Lunar Roving Vehicle nº 1",m:"Apollo 15 (1971)",u:"O primeiro «buggy lunar»: ampliou o alcance dos astronautas, permitindo explorar muito além do módulo lunar.",s:[["210 kg","massa"],["490 kg","carga útil"],["27,76 km","percorridos em 3 h 02 min"],["12,47 km","trajeto mais longo"]],h:"Fabricado pela Boeing. 3,1 m de comprimento, 2,3 m entre eixos, 1,14 m de altura. Quatro rodas, cada uma com motor DC de 0,25 hp (10.000 rpm). Duas baterias de prata-zinco de 36 V e 121 Ah, não recarregáveis. Suspensão duplo wishbone horizontal com barras de torsão.",mi:"Ampliar o alcance dos astronautas na superfície lunar.",p:"Não fazia parte da cápsula de retorno; foi projetado para ser descartado após o uso.",o:"Grande sucesso: chegou a 5,0 km de distância máxima do módulo lunar. Permanece em Hadley Rille, nas montanhas Apennines (26,10°N 3,65°E)."},
+{i:"📷",n:"Hasselblad 500 EL Data Camera",m:"Apollo 11 (1969)",u:"Registrar a superfície com precisão fotogramétrica: dá para medir distâncias e tamanhos de objetos nas fotos.",s:[["10 mm","espaçamento da grade Reseau"],["0,002 mm","tolerância de calibração"],["60 mm","lente Zeiss Biogon f/5.6"]],h:"Câmera adaptada pela NASA. A inovação era a placa de Reseau: vidro rente ao plano do filme, gravado com grade de cruzes. A lente foi projetada especialmente para a NASA.",mi:"Registrar imagens da superfície lunar com precisão fotogramétrica.",p:"A NASA trouxe de volta só os magazines de filme; corpo, lente e acessórios eram peso morto no retorno.",o:"As imagens com a placa de Reseau permitiram fotogrametria precisa do ambiente lunar."},
+{i:"🪞",n:"Retrorefletor a laser LRRR",m:"Apollo 11 (1969)",u:"Devolve pulsos de laser disparados da Terra, medindo a distância Terra-Lua com precisão inédita. Instrumento passivo, sem energia.",s:[["46 cm","lado do painel de alumínio"],["100","cubos de canto de sílica fundida"],["3,8 cm","diâmetro de cada cubo"],["~3 cm","precisão da medição"]],h:"Lunar Laser Ranging Retroreflector: os cubos de canto refletem o feixe diretamente de volta à fonte, independentemente do ângulo de incidência.",mi:"Refletir pulsos de laser de observatórios terrestres para medir a distância Terra-Lua.",p:"É passivo, sem necessidade de energia. Não havia razão para trazê-lo de volta.",o:"Continua cumprindo: é o único experimento da era Apollo ainda ativo. Distância média de 384.400 km; a Lua se afasta 3,8 cm por ano."},
+{i:"🎒",n:"Mochila PLSS",m:"Apollo 11 (1969)",u:"Mantém o astronauta vivo e funcional: oxigênio, controle térmico e comunicações para trabalhar na superfície.",s:[["4 h","atividade extraveicular"],["+30 min","emergência (sistema OPS)"],["1,4 kg","hidróxido de lítio (CO₂)"],["3,9 L","água de resfriamento"]],h:"Portable Life Support System: mochila com tanque de oxigênio gasoso, remoção de CO₂ por hidróxido de lítio (3,0 lb) e água de resfriamento (8,5 lb).",mi:"Fornecer oxigênio, controle térmico e comunicações ao astronauta.",p:"Após cumprir a função, era peso morto no retorno. Todas as unidades usadas na Apollo foram deixadas na Lua.",o:"Sem o PLSS, as caminhadas lunares seriam impossíveis; permitiu operar por horas na superfície."}],
+marte:[
+{i:"🤖",n:"Rover Sojourner",m:"Mars Pathfinder (1997)",u:"Primeiro rover marciano: demonstrador de tecnologia que provou que um veículo robótico pode se locomover e fazer observações in situ.",s:[["10,6 kg","massa"],["83 sols","operação (7 planejados)"],["~100 m","percorridos"],["100 m","alcance de comunicação com o lander"]],h:"65 × 48 × 28 cm (tamanho de um micro-ondas), suspensão rocker-bogie de seis rodas. Dependia do lander Pathfinder para falar com a Terra.",mi:"Demonstrar locomoção robótica em Marte e realizar observações in situ.",p:"A missão não previa retorno. Permaneceu em Ares Vallis após o fim das comunicações.",o:"Provou que rovers funcionam em Marte e operou muito além do planejado."},
+{i:"🚜",n:"Rover Spirit",m:"Mars Exploration Rover (2004)",u:"Geólogo robótico: procurou rochas e solos com pistas de água no passado de Marte.",s:[["185 kg","massa"],["90 sols","vida planejada"],["6a 2m 19d","operação (25× o previsto)"],["7,73 km","percorridos"]],h:"1,6 m de comprimento, 2,3 m de largura, 1,5 m de altura. Pancam, espectrômetro Mössbauer, APXS, imageador microscópico (MI) e ferramenta de abrasão de rochas (RAT).",mi:"Buscar e caracterizar rochas e solos que guardassem pistas de atividade de água.",p:"Ficou preso em solo arenoso em 2009 e perdeu a mobilidade; operou parado até março de 2010, quando parou de se comunicar.",o:"Excepcional: encontrou fortes evidências de que Marte foi muito mais úmido no passado."},
+{i:"⛏️",n:"Lander Phoenix",m:"Phoenix Mars Lander (2008)",u:"Escavou o solo polar e analisou o gelo subterrâneo para avaliar a habitabilidade da região.",s:[["350 kg","massa de pouso"],["2,3 m","braço robótico"],["1 m","profundidade de escavação"],["157 sols","operação"]],h:"Sonda estacionária com TEGA (análise de amostras aquecidas) e MECA (microscopia, eletroquímica e condutividade).",mi:"Escavar o solo polar, analisar o gelo e avaliar a habitabilidade.",p:"Sem sistema de retorno; cessou comunicações em novembro de 2008 com a chegada do inverno marciano.",o:"Confirmou gelo de água no subsolo e completou todos os experimentos planejados."},
+{i:"📡",n:"Lander InSight",m:"Missão InSight (2018)",u:"«Ouviu» o interior de Marte com um sismômetro, mapeando crosta, manto e núcleo.",s:[["358 kg","massa de pouso"],["1.300+","marsquakes detectados"],["Mw 4,7","maior evento"],["21/12/2022","fim da missão"]],h:"Sonda geofísica estacionária; instrumento principal: SEIS (Seismic Experiment for Interior Structure), sismômetro em forma de domo.",mi:"Detectar terremotos marcianos para mapear o interior do planeta.",p:"Os painéis solares foram cobertos por poeira, reduzindo a energia a níveis críticos.",o:"Sucesso retumbante: Marte tem crosta fina, manto frio e núcleo grande com camada externa líquida."},
+{i:"🪨",n:"Massa de tungstênio da Perseverance",m:"Mars 2020 (2021)",u:"Lastro que ajustou o centro de massa da nave, estabilizando a orientação na entrada, descida e pouso.",s:[["~77 kg","cada massa (CBMD)"],["4,7 km/s","velocidade de impacto"],["5","crateras criadas"],["~7 kPa","resistência estimada do solo"]],h:"Cruise Ballast Mass Devices: duas massas de tungstênio de ~77 kg usadas para ajustar o centro de massa.",mi:"Estabilizar a nave e garantir a orientação correta na entrada, descida e pouso.",p:"Foram descartadas de propósito antes do pouso e caíram em Marte.",o:"A nave pousou em segurança. Bônus: duas massas e três fragmentos do estágio de cruzeiro formaram cinco crateras, um impacto acidental que permitiu medir a resistência do solo."}]};
+const S={lua:["Na Apollo 11, o Eagle fez a descida final até o Mare Tranquillitatis levando Armstrong e Aldrin. Cada quilo de combustível era vital, e o pouso terminou com 98 kg sobrando, mais folga do que o previsto. Depois, o estágio virou a plataforma de onde a metade superior decolou, e ficou para sempre ali, como marco do primeiro pouso humano.","Na Apollo 15, o primeiro buggy lunar mudou a escala da exploração: em vez de caminhar perto do módulo, os astronautas passaram a percorrer quilômetros até Hadley Rille. Foi feito para ser usado e abandonado, e deixou claro que a Lua podia ser explorada como um território, não só visitada.","Para a Apollo 11, a Hasselblad ganhou uma placa de vidro com cruzes calibradas. Assim cada foto virou também um instrumento de medida. Como cada grama contava na volta, só os magazines de filme voltaram; a câmera ficou para trás, mas o que ela registrou foi trazido para a Terra.","Deixado pela Apollo 11, o retrorefletor é uma peça simples: cubos de vidro que devolvem a luz para onde ela veio. Décadas depois, observatórios ainda apontam lasers para ele. É o único experimento da era Apollo ainda ativo e revelou que a Lua se afasta da Terra 3,8 cm por ano.","Para andar na Lua, o astronauta carregava a própria «mini-Terra» nas costas: ar, temperatura e rádio. Ao fim de cada passeio, a mochila passou a ser peso morto no retorno. Todas as usadas na Apollo foram deixadas na superfície, depois de cumprir o papel de tornar possíveis as caminhadas lunares."],marte:["Em 1997, o Sojourner foi um teste: será que um robô consegue rodar em Marte? Foi planejado para 7 sols e funcionou 83. Do tamanho de um micro-ondas, dependia do lander Pathfinder para falar com a Terra, e abriu o caminho para todos os rovers seguintes.","O Spirit chegou em 2004 com garantia de 90 sols e viveu mais de seis anos. Rodou 7,73 km buscando sinais de água. Em 2009 atolou em solo arenoso e continuou como estação fixa até calar em março de 2010, deixando evidências fortes de um Marte mais úmido.","O Phoenix pousou na região polar com um braço de 2,3 m para cavar. Trabalhou por 157 sols e confirmou gelo de água no subsolo. Com a chegada do inverno marciano, a luz acabou e as comunicações cessaram em novembro de 2008, depois de concluir seus experimentos.","O InSight não andou: ficou parado «ouvindo». Seu sismômetro SEIS registrou mais de 1.300 marsquakes e mostrou que Marte tem crosta fina, manto frio e núcleo grande. A poeira foi cobrindo os painéis solares até faltar energia, e a NASA declarou o fim em 21 de dezembro de 2022.","Antes de Marte, a Perseverance largou duas massas de tungstênio de cerca de 77 kg, planejadas para equilibrar a nave. Elas caíram a 4,7 km/s e abriram crateras. Os cientistas aproveitaram o acidente como experimento: a velocidade e a massa conhecidas permitiram estimar a resistência do solo em cerca de 7 kPa."]};
+const $=s=>document.querySelector(s);let w="lua",k=0,busy=false;
+const body=document.body,hero=$("#hero"),stage=$("#stage"),panel=$("#panel");
+function roster(){$("#roster").innerHTML=D[w].map((d,j)=>`<div class="ch ${j==k?"on":""}" data-j="${j}"><i>${d.i}</i>${d.n.split(" ").slice(0,3).join(" ")}</div>`).join("")}
+function fx(c){body.classList.remove(c);void body.offsetWidth;body.classList.add(c);setTimeout(()=>body.classList.remove(c),600)}
+function pick(j,first){if(busy)return;busy=true;
+ if(!first){fx("glitch");hero.className="hero out";stage.classList.remove("lit");body.classList.remove("dof");stage.classList.remove("whip");void stage.offsetWidth;stage.classList.add("whip");panel.classList.remove("show")}
+ setTimeout(()=>{k=j;roster();const e=D[w][j];hero.textContent=e.i;hero.className="hero in";$("#badge").textContent=e.m;panel.innerHTML="";busy=false;burst()},first?0:520)}
+function show(){const e=D[w][k];stage.classList.add("lit");body.classList.add("dof");
+ panel.innerHTML=`<div class="card wide"><h3>${e.n} — ${e.m}</h3><div class="stats">${e.s.map(x=>`<div class="stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join("")}</div><h3>Função e utilidade</h3><p>${e.u}</p></div><div class="card wide"><h3>📖 A história</h3><p>${S[w][k]}</p></div><div class="card"><h3>Hardware e especificações</h3><p>${e.h}</p></div><div class="card"><h3>A missão</h3><p>${e.mi}</p></div><div class="card"><h3>Por que ficou ${w=="lua"?"na Lua":"em Marte"}</h3><p>${e.p}</p></div><div class="card"><h3>Cumpriu o objetivo?</h3><span class="yes">SIM</span><p>${e.o}</p></div>`;
+ panel.classList.remove("show");requestAnimationFrame(()=>requestAnimationFrame(()=>panel.classList.add("show")));}
+$("#ok").onclick=()=>{const r=document.createElement("div");r.className="ring go";stage.appendChild(r);setTimeout(()=>r.remove(),900);
+ body.classList.add("freeze","flash");setTimeout(()=>body.classList.remove("freeze"),110);setTimeout(()=>{fx("shake");show();burst(60)},120);setTimeout(()=>body.classList.remove("flash"),600)};
+$("#roster").onclick=e=>{const c=e.target.closest(".ch");if(c)pick(+c.dataset.j)};
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));t.classList.add("on");w=t.dataset.w;body.classList.toggle("mars",w=="marte");k=0;fx("glitch");body.classList.remove("dof");stage.classList.remove("lit");panel.classList.remove("show");roster();busy=false;pick(0,true)});
+document.addEventListener("mousemove",e=>{const x=e.clientX/innerWidth-.5,y=e.clientY/innerHeight-.5;$("#bg").style.transform=`translate(${x*-30}px,${y*-20}px)`;$("#stars").style.transform=`translate(${x*-60}px,${y*-40}px)`;hero.style.translate=`${x*22}px ${y*14}px`});
+const cv=$("#cv"),cx=cv.getContext("2d");let P=[];function rs(){cv.width=innerWidth;cv.height=innerHeight}rs();addEventListener("resize",rs);
+function burst(n=24){const r=hero.getBoundingClientRect();for(let i=0;i<n;i++)P.push({x:r.left+r.width/2,y:r.top+r.height/2,vx:(Math.random()-.5)*5,vy:(Math.random()-.8)*4,l:60+Math.random()*60,c:w=="lua"?"#cfe3ff":"#ff8a55"})}
+(function loop(){cx.clearRect(0,0,cv.width,cv.height);if(Math.random()<.4)P.push({x:Math.random()*cv.width,y:cv.height+5,vx:(Math.random()-.5)*.6,vy:-.6-Math.random(),l:200,c:w=="lua"?"#cfe3ff":"#ff8a55"});
+ P=P.filter(p=>p.l>0);for(const p of P){p.x+=p.vx;p.y+=p.vy;p.l--;cx.globalAlpha=Math.min(1,p.l/60)*.8;cx.fillStyle=p.c;cx.fillRect(p.x,p.y,2,2)}requestAnimationFrame(loop)})();
+roster();pick(0,true);
+</script></body></html>
